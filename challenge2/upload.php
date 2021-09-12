@@ -1,46 +1,34 @@
 <?php
-// Include the database configuration file
-require_once 'dbConfig.php';
+#This code is a mix of two tutorials. The links to which are provided here
+#https://www.codexworld.com/php-file-upload/
+#https://www.codexworld.com/store-retrieve-image-from-database-mysql-php/
+session_start();
+include 'dbConfig.php';
+$statusMsg = '';
+//file upload path
+$targetDir = "images/";
+$fileName = basename($_FILES["image"]["name"]);
+$_SESSION["filenme"] = $fileName;
+$targetFilePath = $targetDir . $fileName;
+$fileType = pathinfo($targetFilePath,PATHINFO_EXTENSION);
+$fileSize = $_FILES["image"]["size"];
 
-// If file upload form is submitted
-$status = $statusMsg = '';
-$targetDir = "temporary/";
-if(isset($_POST["submit"])){
-    $status = 'error';
-    if(!empty($_FILES["image"]["name"])) {
-        // Get file info
-        $fileName = basename($_FILES["image"]["name"]);
-        $targetFilePath = $targetDir . $fileName
-        $fileType = pathinfo($fileName, PATHINFO_EXTENSION);
-
-        // Allow certain file formats
-        $allowTypes = array('jpg','png','jpeg','gif');
-        if(in_array($fileType, $allowTypes)){
-            if(move_uploaded_files($_FILES["image"]["tmp_name"], $targetFilePath)){
-
-
-                // Insert image path into database
-                $insert = $db->query("INSERT into images (file_path, uploaded) VALUES ('$targetFilePath', NOW())");
-
-                if($insert){
-                        $status = 'success';
-                        $statusMsg = "File uploaded successfully.";
-                }else{
-                        $statusMsg = "File upload failed, please try again.";
-                }
-
-            }else{
-                $statusMsg = "Sorry there was an error uploading your file.";
-            }
+if(isset($_POST["submit"]) && !empty($_FILES["image"]["name"])) {
+    //allow certain file formats
+    $allowTypes = array('jpg','png','jpeg','gif','pdf');
+    if(in_array($fileType, $allowTypes)){
+        //upload file to server
+	if(move_uploaded_file($_FILES["image"]["tmp_name"], $targetFilePath)){
+		$db->query("INSERT into images (image_name, file_type, file_size, file_path, uploaded) VALUES ('$fileName', '$fileType', '$fileSize', '$targetFilePath', NOW())");
+		$statusMsg = "The file ".$fileName. " has been uploaded.";
+		header("Location: http://www.jtbd4k.me/challenge2/view.php");
         }else{
-            $statusMsg = 'Sorry, only JPG, JPEG, PNG, & GIF files are allowed to upload.';
+		$statusMsg = "Sorry, there was an error uploading your file.";
         }
     }else{
-        $statusMsg = 'Please select an image file to upload.';
+        $statusMsg = 'Sorry, only JPG, JPEG, PNG, GIF, & PDF files are allowed to upload.';
     }
+}else{
+    $statusMsg = 'Please select a file to upload.';
 }
-
-// Display status message
-echo $statusMsg;
 ?>
-
